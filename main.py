@@ -47,7 +47,7 @@ class ECC:
         return v
 
     def AWGNPass(self):
-        R = []
+        R = []      
 
 
 
