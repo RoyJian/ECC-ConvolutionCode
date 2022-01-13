@@ -1,8 +1,11 @@
 import numpy as np
 from numpy.random.mtrand import rand
-import pandas as pd
+import networkx as nx
+import pylab
+import matplotlib.pyplot as plt
+import scipy as sp
 
-class ECC:
+class ECC:  
 
     def __init__(self):
 
@@ -69,7 +72,6 @@ class ECC:
         temp = np.zeros([1,3]).astype(np.int8) # [input temp0 temp1]
         outputs = np.zeros([8,2]).astype(int) # [V0 V1] x8  
         nextState = np.zeros([8,2])  # [next0 next1] x8
-
         for  i in range(8):
             temp[0][1:] = allSignal[int(i/2)] # 放入暫存器
             if np.mod(i,2) == 0:  
@@ -99,6 +101,45 @@ class ECC:
                 nextState[i][0] = 1
         print(outputs)
         print(nextState)
+        outputsInAllSignal = [(allSignal == tuple(outputs[i])).all(axis=1).nonzero()[0][0] for i in range(8)] # outputs 是哪一個singal
+        nextStateInAllSignal =  [(allSignal == tuple(nextState[i])).all(axis=1).nonzero()[0][0] for i in range(8)]
+        print(nextStateInAllSignal)
+
+        Base = [0,1,2,3]
+        allEdges = []
+        # for i in range(8):
+        #     allEdges.append((int(i/2),nextStateInAllSignal[i]))
+        allEdges = [ (int(i/2),nextStateInAllSignal[i]) for i in range(8)]
+
+        G = nx.DiGraph()
+        for i in range(8):
+            G.add_edges_from([allEdges[i]], weight=outputsInAllSignal[i])  
+        
+        pos = nx.circular_layout(G)
+        
+        options = {
+        'node_color': 'blue',
+        'node_size': 800,
+        'width': 1,
+        'arrowstyle': '-|>',
+        'arrowsize': 8,
+        }
+        print(dict([((u,v,),d['weight'])
+                 for u,v,d in G.edges(data=True)]))
+                
+        edge_labels = dict([((u,v,),d['weight'])
+                 for u,v,d in G.edges(data=True)])
+        nx.draw_networkx_edge_labels(G,pos,edge_labels=edge_labels)
+        nx.draw_networkx(G,pos, connectionstyle='arc3, rad = 0.1', arrows=True, **options)
+        pylab.show()
+       
+        
+        
+
+        # G = nx.DiGraph()
+        # G.add_nodes_from([(0,0),(1,0),(0,1),(1,1)])
+        
+        
 
         return [outputs,nextState]
 
@@ -112,6 +153,7 @@ if __name__ == '__main__':
    g0 = np.array([1,0,1])
    g1 = np.array([1,1,0])
    ECC.StructMap(None,g0,g1)
+
 
     
 
