@@ -17,10 +17,10 @@ class ECC:
         # print('Please input series (Binary): ')
         # self.u = np.array([int(s) for s in input() ])
         # self.StructBlock(self.g0,self.g1,self.u)
-        self.g0 = np.array([1, 0, 1])
-        self.g1 = np.array([1, 1, 0])
+        self.g0 = np.array([1, 1, 1])
+        self.g1 = np.array([1, 0, 1])
         self.u = np.array([1, 1, 0, 1, 1])
-        self.base = [0, 1, 2, 3]
+        
         self.base = np.array([(0, 0), (1, 0), (0, 1), (1, 1)]).astype(np.int8)
         self.allPath = []
         # v = self.Encode(self.g0,self.g1,self.u)
@@ -172,7 +172,7 @@ class ECC:
         for i in list(G.neighbors(vertex)):
             if stack < self.sTimes+1:
                 
-                self.DFS(G,i,queue,stack)
+                self.DFS(G,i,queue.copy(),stack)
             if stack == self.sTimes+1:
                 self.allPath.append(queue.copy())
                 queue.pop()
@@ -180,10 +180,10 @@ class ECC:
                 if self.poptimes >= 2:
                     self.poptimes = 0
                     queue.pop()
-                    return 0
-                return 0
+                    return 
+                return
 
-        return 0 
+        return 
 
     def Decode(self, v):
 
@@ -207,13 +207,23 @@ class ECC:
         self.DFS(G,0,[],0)
         print(self.allPath)
         print(len(self.allPath))
+        for i in self.allPath:
+            theDistance = 0
+            for j in range(len(i)-1):
+                theDistance = 0
+              
+            self.allDistance.append(theDistance)
+            theDistance = 0  
+        
+        print(self.allDistance)
 
+        
         return 0
 
 
 if __name__ == '__main__':
     ECC = ECC()
-    v = [1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0]
+    v = [1,1, 0,1 ,1,0, 1,1, 0,0 ,0,1, 0,1]
     ECC.Decode(v)
     # pylab.show()
 
