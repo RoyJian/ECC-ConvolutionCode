@@ -16,9 +16,9 @@ class ECC:
         # print('Please input series (Binary): ')
         # self.u = np.array([int(s) for s in input() ])
         #self.StructBlock(self.g0,self.g1,self.u)
-        self.g0 = np.array([1,0,1])
-        self.g1 = np.array([1,1,0])
-        self.u = np.array([1,1,1,0,1])
+        self.g0 = np.array([1,1,1])
+        self.g1 = np.array([1,0,1])
+        self.u = np.array([1,1,0,1,1])
         v = self.Encode(self.g0,self.g1,self.u)
         r = self.AWGNPass(v,1)
         print('r = \n',r)
@@ -29,7 +29,7 @@ class ECC:
 
     def Encode(self,g0,g1,u):
         v = []
-        G = np.zeros([len(u),( len(u)+len(g0)-1) * 2 ])
+        G = np.zeros([len(u),(len(u)+len(g0)-1) * 2 ])
         g = []
 
         for i in range(len(g0)):
@@ -49,12 +49,12 @@ class ECC:
         v = np.matmul(u,G)
         v = v.astype(np.int8)
         v = np.mod(v,2)
-        v = v[:][:2*len(u)]
+        # v = v[:][:2*len(u)]
         print('v=\n', v)
         return v
 
     def AWGNPass(self,v,SNR): # SNR：雜訊強度
-        N = 2 * len(self.u)    # 訊息長度
+        N = len(v)    # 訊息長度
         s = 2*v-np.ones((1,N))      # 將1、0變成 1、 -1 (0不能做運算要換成-1)
         noise_var = 1/(10**(SNR/10))
         r = s + np.random.randn(1,N)*np.sqrt(noise_var)
@@ -149,11 +149,10 @@ class ECC:
 
 
 if __name__ == '__main__':
-   #ECC = ECC()
-   g0 = np.array([1,0,1])
-   g1 = np.array([1,1,0])
+   # ECC = ECC()
+   g0 = np.array([1,0,0])
+   g1 = np.array([0,1,1])
    ECC.StructMap(None,g0,g1)
 
 
     
-
