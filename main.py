@@ -3,7 +3,6 @@ import numpy as np
 from numpy.lib.function_base import append
 from numpy.random.mtrand import rand
 import networkx as nx
-import pylab
 import matplotlib.pyplot as plt
 import scipy as sp
 from decimal import Decimal
@@ -37,19 +36,12 @@ class ECC:
             g.append(g0[i])
             g.append(g1[i])
 
-        # print('g = ', g)
-
-        # print('u=\n', u)
 
         for i in range(len(G)):
             G[i][2*i:2*i+2*len(g1)] = g
-        # print('G =\n', G)
 
-        v = np.matmul(u, G)
-        v = v.astype(np.int8)
+        v = np.matmul(u, G).astype(np.int8)
         v = np.mod(v, 2)
-        # v = v[:][:2*len(u)]
-        # print('v=\n', v)
         return v
 
     def AWGNPass(self, v, SNR):  # SNR：雜訊強度
@@ -98,16 +90,12 @@ class ECC:
                 outputs[i][1] = np.mod(outputs[i][1], 2)
                 nextState[i][1] = temp[0][1]
                 nextState[i][0] = 1
-        # print(outputs)
-        # print(nextState)
+
         outputsInAllSignal = [(allSignal == tuple(outputs[i])).all(axis=1).nonzero()[
             0][0] for i in range(8)]  # outputs 是哪一個singal
         nextStateInAllSignal = [(allSignal == tuple(nextState[i])).all(
             axis=1).nonzero()[0][0] for i in range(8)]
-        # print(outputsInAllSignal)
 
-        # for i in range(8):
-        #     allEdges.append((int(i/2),nextStateInAllSignal[i]))
         allEdges = [(int(i/2), nextStateInAllSignal[i]) for i in range(8)]
 
         G = nx.DiGraph()
@@ -117,7 +105,7 @@ class ECC:
         pos = nx.circular_layout(G)
 
         options = {
-            'node_color': 'blue',
+            'node_color': 'tab:blue',
             'node_size': 800,
             'width': 1,
             'arrowstyle': '-|>',
@@ -135,8 +123,6 @@ class ECC:
         
         return [G,outputsInAllSignal, nextStateInAllSignal]  # input從index判斷所以省略
 
-        # G = nx.DiGraph()
-        # G.add_nodes_from([(0,0),(1,0),(0,1),(1,1)])
     
     def BitDistance(self,bit1,bit2): # (0,1) 
         return int(bit1[0]^bit2[0]) + int(bit1[1]^bit2[1]) # ^是XOR運算子
@@ -151,7 +137,6 @@ class ECC:
         stack += 1
         for i in list(G.neighbors(vertex)):
             if stack < self.sTimes+1:
-                
                 self.DFS(G,i,queue.copy(),stack)
             if stack == self.sTimes+1:
                 self.allPath.append(queue.copy())
@@ -167,19 +152,9 @@ class ECC:
     
     def Decode(self, v ):
         G = self.G
-        # [G,outputsInAllSignal, nextStateInAllSignal] = self.StructMap(
-        #     self.g0, self.g1)
-        # self.sTimes = int(len(v) / 2)  # EdgeNum
         v = [(v[2*i], v[2*i+1]) for i in range(int(len(v)/2))]
         
         v2base = self.WhichBase(v)
-        
-        # self.allPath = []
-        # self.allDistance = []
-        # self.poptimes = 0
-       
-        
-        # self.DFS(G,0,[],0)
 
         for i in self.allPath:
             theDistance = 0
@@ -192,8 +167,6 @@ class ECC:
               
             self.allDistance.append(theDistance)
             theDistance = 0  
-        
-
 
         minIndex = self.allDistance.index(min(self.allDistance))
         path = self.allPath[minIndex]
@@ -202,7 +175,6 @@ class ECC:
         for i in range(len(path)-1):
             s = (path[i],path[i+1])
             vDecode.append(np.mod(self.allEdges.index(s),2))
-        
 
         return vDecode
 
@@ -210,11 +182,11 @@ class ECC:
 
 
 if __name__ == '__main__':
-    N = 3
+    N = 5
     ecc = ECC([1,1,1],[1,0,1],N)
     errTimes = 0
     errTimes2 = 0
-    CodeNum = 10000
+    CodeNum =5000
     dB = [i for i in range(1,11)]
     ber = []
     ber2 = []
@@ -236,7 +208,7 @@ if __name__ == '__main__':
     plt.figure(2)   
     plt.title("Conv Code BER Plot ")
     plt.plot(dB,ber,label="Coded")
-    plt.plot(dB,ber2,label="Uncodeed")
+    plt.plot(dB,ber2,label="Uncoded")
     plt.legend(loc='upper right')
     plt.yscale('log')
     plt.ylim(bottom=10**(-4))
