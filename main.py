@@ -205,15 +205,11 @@ class ECC:
         return vDecode
 
 
-    def cleanReg(self):
-       
-        pass
-
 
 
 if __name__ == '__main__':
     N = 5
-    ECC = ECC([1,1,1],[1,0,1],N)
+    ecc = ECC([1,1,1],[1,0,1],N)
     # u = [1, 1, 1, 0, 1 ]
     # print(u)
     # v = ECC.Encode(u)
@@ -233,11 +229,11 @@ if __name__ == '__main__':
         for j in range(CodeNum):
             u = np.round(np.random.rand(1,N)).astype(np.int8)[0]
             #print(u)
-            v = ECC.Encode(u)
-            r = ECC.AWGNPass(v,i)
-            du = ECC.Decode(r)
+            v = ecc.Encode(u)
+            r = ecc.AWGNPass(v,i)
+            du = ecc.Decode(r)
             du = du[:N]
-            ECC.cleanReg()
+            ecc.cleanReg()
             errTimes += np.sum(np.mod(du-u,2));
         ber.append(errTimes/CodeNum/N)
         errTimes = 0
