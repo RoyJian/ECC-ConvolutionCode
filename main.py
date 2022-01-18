@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.function_base import append
 from numpy.random.mtrand import rand
 import networkx as nx
 import pylab
@@ -8,28 +9,24 @@ import scipy as sp
 
 class ECC:
 
-    def __init__(self):
-
-        # print('Please input g(0) (like 101、111): ')
-        # self.g0 = np.array([int(s) for s in input() ])
-        # print('Please input g(1) (like 101、111): ')
-        # self.g1 = np.array([int(s) for s in input() ])
-        # print('Please input series (Binary): ')
-        # self.u = np.array([int(s) for s in input() ])
-        # self.StructBlock(self.g0,self.g1,self.u)
-        self.g0 = np.array([1, 1, 1])
-        self.g1 = np.array([1, 0, 1])
-        self.u = np.array([1, 1, 0, 1, 1])
-        
+    def __init__(self,g0,g1,N):
+        self.N = N
+        self.g0 = np.array(g0)
+        self.g1 = np.array(g1)
+        [self.G,outputsInAllSignal, nextStateInAllSignal] = self.StructMap(
+            self.g0, self.g1)
         self.base = np.array([(0, 0), (1, 0), (0, 1), (1, 1)]).astype(np.int8)
         self.allPath = []
-        # v = self.Encode(self.g0,self.g1,self.u)
-        # r = self.AWGNPass(v,1)
-        # print('r = \n',r)
-
+        self.allDistance = []
+        self.poptimes = 0
+        self.sTimes = int(self.N + len(self.g0) -1)
+        self.DFS(self.G,0,[],0)
+        self.allEdges = [(int(i/2), nextStateInAllSignal[i]) for i in range(8)]
         pass
 
-    def Encode(self, g0, g1, u):
+    def Encode(self, u):
+        g0 = self.g0
+        g1 = self.g1
         v = []
         G = np.zeros([len(u), (len(u)+len(g0)-1) * 2])
         g = []
@@ -38,26 +35,26 @@ class ECC:
             g.append(g0[i])
             g.append(g1[i])
 
-        print('g = ', g)
+        # print('g = ', g)
 
-        print('u=\n', u)
+        # print('u=\n', u)
 
         for i in range(len(G)):
             G[i][2*i:2*i+2*len(g1)] = g
-        print('G =\n', G)
+        # print('G =\n', G)
 
         v = np.matmul(u, G)
         v = v.astype(np.int8)
         v = np.mod(v, 2)
         # v = v[:][:2*len(u)]
-        print('v=\n', v)
+        # print('v=\n', v)
         return v
 
     def AWGNPass(self, v, SNR):  # SNR：雜訊強度
         N = len(v)    # 訊息長度
         s = 2*v-np.ones((1, N))      # 將1、0變成 1、 -1 (0不能做運算要換成-1)
         noise_var = 1/(10**(SNR/10))
-        r = s + np.random.randn(1, N)*np.sqrt(noise_var)
+        r = s + np.random.randn(1, N) * np.sqrt(noise_var)
         r = r[0].astype(np.int8)
 
         for i in range(N):
@@ -148,25 +145,6 @@ class ECC:
             axis=1).nonzero()[0][0] for i in range(len(l))]
     
     def DFS(self,G,vertex,queue,stack):
-       
-        # if(len(self.allPath) < 2**(self.sTimes)):
-        #     queue.append(vertex)
-        #     for i in list(G.neighbors(vertex)):
-        #         if len(queue) == self.sTimes+1  :
-        #                 # 完成一次                 
-        #                 self.allPath.append(queue.copy())
-        #                 queue.pop()
-        #                 poptimes += 1
-                        
-        #         if(poptimes >= 2):
-        #             poptimes = 0
-        #             queue.pop()
-        #             return queue
-        #         if stack < self.sTimes+1:
-        #             stack += 1    
-        #             queue=self.DFS(G,i,queue,poptimes,stack)         
-        #     return queue
-        # else :
         queue.append(vertex)
         stack += 1
         for i in list(G.neighbors(vertex)):
@@ -184,46 +162,88 @@ class ECC:
                 return
 
         return 
-
-    def Decode(self, v):
-
-        [G,outputsInAllSignal, nextStateInAllSignal] = self.StructMap(
-            self.g0, self.g1)
-        self.sTimes = int(len(v) / 2)  # EdgeNum
-        v = [(v[2*i], v[2*i+1]) for i in range(self.sTimes)]
+    
+    def Decode(self, v ):
+        G = self.G
+        # [G,outputsInAllSignal, nextStateInAllSignal] = self.StructMap(
+        #     self.g0, self.g1)
+        # self.sTimes = int(len(v) / 2)  # EdgeNum
+        v = [(v[2*i], v[2*i+1]) for i in range(int(len(v)/2))]
         
         v2base = self.WhichBase(v)
         
-        self.allPath = []
-        self.path = []
-        self.allDistance = []
-        self.distance = 0 
-        self.poptimes = 0
+        # self.allPath = []
+        # self.allDistance = []
+        # self.poptimes = 0
        
         
-        print(v)
-        print(v2base)
-        print(self.sTimes)
-        self.DFS(G,0,[],0)
-        print(self.allPath)
-        print(len(self.allPath))
+        # self.DFS(G,0,[],0)
+
         for i in self.allPath:
             theDistance = 0
             for j in range(len(i)-1):
-                theDistance = 0
+                pathSelect = (i[j],i[j+1])
+                pathSelect = G.get_edge_data(*pathSelect)['weight']
+                bit1 = self.base[pathSelect]
+                bit2 = self.base[v2base[j]]
+                theDistance += self.BitDistance(bit1,bit2)    
               
             self.allDistance.append(theDistance)
             theDistance = 0  
         
-        print(self.allDistance)
 
+
+        minIndex = self.allDistance.index(min(self.allDistance))
+        path = self.allPath[minIndex]
+        vDecode = []
+        self.allDistance.clear()
+        for i in range(len(path)-1):
+            s = (path[i],path[i+1])
+            vDecode.append(np.mod(self.allEdges.index(s),2))
         
-        return 0
+
+        return vDecode
+
+
+    def cleanReg(self):
+       
+        pass
+
 
 
 if __name__ == '__main__':
-    ECC = ECC()
-    v = [1,1, 0,1 ,1,0, 1,1, 0,0 ,0,1, 0,1]
-    ECC.Decode(v)
+    N = 5
+    ECC = ECC([1,1,1],[1,0,1],N)
+    # u = [1, 1, 1, 0, 1 ]
+    # print(u)
+    # v = ECC.Encode(u)
+    # print(v)
+    # r = ECC.AWGNPass(v,17)
+    # print(r)
+    # # v = [1,1, 0,1 ,1,0, 1,1, 0,0 ,0,1, 0,1]
+    # print(ECC.Decode(r)[:len(u)])
     # pylab.show()
+
+    errTimes = 0
+    CodeNum = 1000
+    dB = [i for i in range(1,16)]
+    ber = []
+    
+    for i in dB:
+        for j in range(CodeNum):
+            u = np.round(np.random.rand(1,N)).astype(np.int8)[0]
+            #print(u)
+            v = ECC.Encode(u)
+            r = ECC.AWGNPass(v,i)
+            du = ECC.Decode(r)
+            du = du[:N]
+            ECC.cleanReg()
+            errTimes += np.sum(np.mod(du-u,2));
+        ber.append(errTimes/CodeNum/N)
+        errTimes = 0
+
+    print(dB)
+    print(ber)
+
+
 
