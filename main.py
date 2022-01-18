@@ -1,3 +1,4 @@
+from cProfile import label
 import numpy as np
 from numpy.lib.function_base import append
 from numpy.random.mtrand import rand
@@ -5,6 +6,7 @@ import networkx as nx
 import pylab
 import matplotlib.pyplot as plt
 import scipy as sp
+from decimal import Decimal
 
 
 class ECC:
@@ -55,7 +57,7 @@ class ECC:
         s = 2*v-np.ones((1, N))      # 將1、0變成 1、 -1 (0不能做運算要換成-1)
         noise_var = 1/(10**(SNR/10))
         r = s + np.random.randn(1, N) * np.sqrt(noise_var)
-        r = r[0].astype(np.int8)
+        r = r[0]
 
         for i in range(N):
             if r[i] > 0:
@@ -208,38 +210,39 @@ class ECC:
 
 
 if __name__ == '__main__':
-    N = 5
+    N = 3
     ecc = ECC([1,1,1],[1,0,1],N)
-    # u = [1, 1, 1, 0, 1 ]
-    # print(u)
-    # v = ECC.Encode(u)
-    # print(v)
-    # r = ECC.AWGNPass(v,17)
-    # print(r)
-    # # v = [1,1, 0,1 ,1,0, 1,1, 0,0 ,0,1, 0,1]
-    # print(ECC.Decode(r)[:len(u)])
-    # pylab.show()
-
     errTimes = 0
-    CodeNum = 1000
-    dB = [i for i in range(1,16)]
+    errTimes2 = 0
+    CodeNum = 10000
+    dB = [i for i in range(1,11)]
     ber = []
-    
+    ber2 = []
     for i in dB:
         for j in range(CodeNum):
             u = np.round(np.random.rand(1,N)).astype(np.int8)[0]
-            #print(u)
             v = ecc.Encode(u)
             r = ecc.AWGNPass(v,i)
+            r2 = ecc.AWGNPass(u,i)
             du = ecc.Decode(r)
             du = du[:N]
-            ecc.cleanReg()
-            errTimes += np.sum(np.mod(du-u,2));
-        ber.append(errTimes/CodeNum/N)
+            errTimes += np.sum(np.mod(du-u,2))
+            errTimes2 += np.sum(np.mod(r2-u,2))
+        ber.append(Decimal(errTimes/CodeNum/N))
+        ber2.append(Decimal(errTimes2/CodeNum/N))
         errTimes = 0
+        errTimes2 = 0
 
-    print(dB)
-    print(ber)
-
+    plt.figure(2)   
+    plt.title("Conv Code BER Plot ")
+    plt.plot(dB,ber,label="Coded")
+    plt.plot(dB,ber2,label="Uncodeed")
+    plt.legend(loc='upper right')
+    plt.yscale('log')
+    plt.ylim(bottom=10**(-4))
+    plt.ylabel("BER")
+    plt.xlabel("Eb/No (dB)")
+    plt.show()
+    
 
 
